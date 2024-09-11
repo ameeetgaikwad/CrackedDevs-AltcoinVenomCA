@@ -33,7 +33,6 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
   }
   userSubscriptions.get(chatId).add(Number(ethValue));
 
-  main(chatId, ethValue);
   // test();
   bot.sendMessage(
     chatId,
@@ -68,11 +67,11 @@ bot.onText(/\/list/, (msg) => {
   }
 });
 
-async function processBlock(blockNumber, chatId, ethValue) {
+async function processBlock(blockNumber) {
   console.log("Processing block:", blockNumber);
-  await delay(5000);
+  await delay(3000);
 
-  console.log("Fetching transactions for...", ethValue,'ETH');
+  console.log("Fetching transactions...");
 
   // let { transactions } = await alchemy.core.getBlock(blockNumber);
   let { receipts } = await alchemy.core.getTransactionReceipts({
@@ -82,13 +81,13 @@ async function processBlock(blockNumber, chatId, ethValue) {
   for (let response of receipts) {
     try {
       if (response.contractAddress) {
-        console.log(response.contractAddress);
+        console.log('contract address',response.contractAddress);
 
         let tokenData = await alchemy.core.getTokenMetadata(
           response.contractAddress
         );
         if (tokenData.decimals > 0) {
-          console.log("we got erc20 token", tokenData);
+          console.log("got erc20 token", tokenData);
           let balance = await alchemy.core.getBalance(
             response.contractAddress,
             "latest"
@@ -98,6 +97,7 @@ async function processBlock(blockNumber, chatId, ethValue) {
           for (let [chatId, subscriptions] of userSubscriptions.entries()) {
             for (let ethValue of subscriptions) {
               if (formatedBalance >= Number(ethValue)) {
+                console.log('sending to chatId',chatId);
                 bot.sendMessage(
                   chatId,
                   `https://etherscan.io/address/${response.contractAddress} for ETH >=${ethValue}`
@@ -119,16 +119,17 @@ async function processBlock(blockNumber, chatId, ethValue) {
   }
 }
 
-async function main(chatId, ethValue) {
+async function main() {
   alchemy.ws.on("block", async (blockNumber) => {
     try {
-      await processBlock(blockNumber, chatId, ethValue);
+      await processBlock(blockNumber);
     } catch (e) {
       console.log("error in b2", e);
     }
   });
 }
 
+main();
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
