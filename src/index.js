@@ -25,6 +25,7 @@ function delay(ms) {
 
 bot.onText(/\/start(.+)?/, async (msg, match) => {
   const chatId = msg.chat.id;
+  console.log("---------------------------------");
   console.log("msg:", msg);
   const ethValue = match[1] ? Number(match[1].trim()) : 0.9;
 
@@ -35,8 +36,8 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
 
   // test();
   bot.sendMessage(
-    chatId,
-    `Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`
+    msg.reply_to_message.from.id,
+    `THIS IS TEST BOT!Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`
   );
   console.log("chatId:", chatId);
 });
