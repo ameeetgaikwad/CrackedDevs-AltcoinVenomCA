@@ -163,7 +163,7 @@ async function processBlock(blockNumber) {
                 } else {
                   bot.sendMessage(
                     chatId,
-                    `https://etherscan.io/address/${response.contractAddress} for ETH >=${ethValue}`
+                    `https://etherscan.io/address/${response.contractAddress} \n - Contract Address: ${response.contractAddress} \n - Deployer Address: ${deployerAddress} \n - Current Balance: ${formatedBalance} ETH \n - Token Name: ${tokenData.name} \n - Token Symbol: ${tokenData.symbol}`
                   );
                 }
 
