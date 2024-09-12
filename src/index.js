@@ -140,6 +140,10 @@ async function processBlock(blockNumber) {
           );
           let formatedBalance = Utils.formatUnits(balance.toString(), "ether");
 
+          let { deployerAddress } = await alchemy.core.findContractDeployer(
+            address
+          );
+
           for (let [chatId, subscriptions] of userSubscriptions.entries()) {
             for (let ethValue of subscriptions) {
               if (formatedBalance >= Number(ethValue)) {
@@ -150,7 +154,7 @@ async function processBlock(blockNumber) {
                   )) {
                     bot.sendMessage(
                       chatId,
-                      `https://etherscan.io/address/${response.contractAddress} for ETH >=${ethValue}`,
+                      `https://etherscan.io/address/${response.contractAddress} \n - Contract Address: ${response.contractAddress} \n - Deployer Address: ${deployerAddress} \n - Current Balance: ${formatedBalance} ETH \n - Token Name: ${tokenData.name} \n - Token Symbol: ${tokenData.symbol}`,
                       {
                         message_thread_id: messageThreadId,
                       }
@@ -201,30 +205,3 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-
-async function test() {
-  //   const address = "0x877Fe7F4e22e21bE397Cd9364fAFd4aF4E15Edb6";
-  //   let tokenData = await alchemy.core.getTokenMetadata(address);
-  //   console.log(address, tokenData);
-
-  // let response = await alchemy.core.getBalance(
-  //   "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB",
-  //   "latest"
-  // );
-  // let formattedWei = Utils.formatUnits(response.toString(), "ether");
-  // //Logging the response to the console
-  // let balance = await alchemy.core.getBalance(
-  //   "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB",
-  //   "latest"
-  // );
-  // let formatedBalance = Utils.formatUnits(balance.toString(), "ether");
-  // console.log(formatedBalance, balance);
-  let response = await alchemy.core.getTransactionReceipts({
-    blockNumber: "20721829",
-  });
-  console.log(response, "hom");
-
-  // 0x22f51fa204c00ae1d2aa72d2e427c8ba9fc1e51b1b73f6710ff002db9845a4a4
-}
-
-// test();
