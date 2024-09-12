@@ -74,7 +74,13 @@ bot.onText(/\/stop (.+)/, (msg, match) => {
       );
     }
   } else {
-    bot.sendMessage(chatId, "You don't have any active subscriptions.");
+    if (messageThreadId) {
+      bot.sendMessage(chatId, "You don't have any active subscriptions.", {
+        message_thread_id: messageThreadId,
+      });
+    } else {
+      bot.sendMessage(chatId, "You don't have any active subscriptions.");
+    }
   }
 });
 
@@ -97,7 +103,13 @@ bot.onText(/\/list/, (msg) => {
       );
     }
   } else {
-    bot.sendMessage(chatId, "You don't have any active subscriptions.");
+    if (messageThreadId) {
+      bot.sendMessage(chatId, "You don't have any active subscriptions.", {
+        message_thread_id: messageThreadId,
+      });
+    } else {
+      bot.sendMessage(chatId, "You don't have any active subscriptions.");
+    }
   }
 });
 
