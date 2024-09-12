@@ -18,6 +18,7 @@ const token = process.env.TELEGRAM_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
 const userSubscriptions = new Map();
+const userChatId_messageThreadId = new Map();
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,11 +34,16 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
     userSubscriptions.set(chatId, new Set());
   }
   userSubscriptions.get(chatId).add(Number(ethValue));
-
+  if (msg.message_thread_id) {
+    if (!userChatId_messageThreadId.has(chatId)) {
+      userChatId_messageThreadId.set(chatId, new Set());
+    }
+    userChatId_messageThreadId.get(chatId).add(msg.message_thread_id);
+  }
   // test();
   bot.sendMessage(
     chatId,
-    `THIS IS TEST BOT!Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`,
+    `!Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`,
     {
       message_thread_id: msg.message_thread_id,
     }
@@ -103,10 +109,25 @@ async function processBlock(blockNumber) {
             for (let ethValue of subscriptions) {
               if (formatedBalance >= Number(ethValue)) {
                 console.log("sending to chatId", chatId);
-                bot.sendMessage(
-                  chatId,
-                  `https://etherscan.io/address/${response.contractAddress} for ETH >=${ethValue}`
-                );
+                if (userChatId_messageThreadId.has(chatId)) {
+                  for (let messageThreadId of userChatId_messageThreadId.get(
+                    chatId
+                  )) {
+                    bot.sendMessage(
+                      chatId,
+                      `https://etherscan.io/address/${response.contractAddress} for ETH >=${ethValue}`,
+                      {
+                        message_thread_id: messageThreadId,
+                      }
+                    );
+                  }
+                } else {
+                  bot.sendMessage(
+                    chatId,
+                    `https://etherscan.io/address/${response.contractAddress} for ETH >=${ethValue}`
+                  );
+                }
+
                 console.log(
                   "we got the required address",
                   response.contractAddress
