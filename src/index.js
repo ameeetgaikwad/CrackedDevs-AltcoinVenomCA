@@ -141,7 +141,7 @@ async function processBlock(blockNumber) {
           let formatedBalance = Utils.formatUnits(balance.toString(), "ether");
 
           let { deployerAddress } = await alchemy.core.findContractDeployer(
-            address
+            response.contractAddress
           );
 
           for (let [chatId, subscriptions] of userSubscriptions.entries()) {
