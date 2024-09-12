@@ -43,7 +43,7 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
   // test();
   bot.sendMessage(
     chatId,
-    `!Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`,
+    `Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`,
     {
       message_thread_id: msg.message_thread_id,
     }
@@ -54,14 +54,25 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
 
 bot.onText(/\/stop (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
+  const messageThreadId = msg.message_thread_id;
   const ethValue = Number(match[1].trim());
 
   if (userSubscriptions.has(chatId)) {
     userSubscriptions.get(chatId).delete(ethValue);
-    bot.sendMessage(
-      chatId,
-      `You have unsubscribed from notifications for ${ethValue} ETH.`
-    );
+    if (userChatId_messageThreadId.has(chatId)) {
+      bot.sendMessage(
+        chatId,
+        `You have unsubscribed from notifications for ${ethValue} ETH.`,
+        {
+          message_thread_id: messageThreadId,
+        }
+      );
+    } else {
+      bot.sendMessage(
+        chatId,
+        `You have unsubscribed from notifications for ${ethValue} ETH.`
+      );
+    }
   } else {
     bot.sendMessage(chatId, "You don't have any active subscriptions.");
   }
@@ -69,10 +80,22 @@ bot.onText(/\/stop (.+)/, (msg, match) => {
 
 bot.onText(/\/list/, (msg) => {
   const chatId = msg.chat.id;
+  const messageThreadId = msg.message_thread_id;
 
   if (userSubscriptions.has(chatId) && userSubscriptions.get(chatId).size > 0) {
     const subscriptions = Array.from(userSubscriptions.get(chatId)).join(", ");
-    bot.sendMessage(chatId, `Your active subscriptions: ${subscriptions} ETH`);
+    if (userChatId_messageThreadId.has(chatId)) {
+      bot.sendMessage(
+        chatId,
+        `Your active subscriptions: ${subscriptions} ETH`,
+        { message_thread_id: messageThreadId }
+      );
+    } else {
+      bot.sendMessage(
+        chatId,
+        `Your active subscriptions: ${subscriptions} ETH`
+      );
+    }
   } else {
     bot.sendMessage(chatId, "You don't have any active subscriptions.");
   }
