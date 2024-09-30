@@ -17,12 +17,28 @@ const token = process.env.TELEGRAM_TOKEN;
 
 const bot = new TelegramBot(token, { polling: true });
 
+// Set available commands
+bot.setMyCommands([
+  { command: "start", description: "Subscribe to notifications" },
+  { command: "stop", description: "Unsubscribe from notifications" },
+  { command: "list", description: "View your active subscriptions" },
+  { command: "help", description: "Get available commands" },
+]);
+
 const userSubscriptions = new Map();
 const userChatId_messageThreadId = new Map();
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+const helpMessage = `
+*Available commands*:
+/start <value> - Subscribe to notifications for tokens with balance >= <value> ETH
+/stop <value> - Unsubscribe from notifications for <value> ETH
+/list - View your active subscriptions
+/help - Get available commands
+`;
 
 bot.onText(/\/start(.+)?/, async (msg, match) => {
   console.log("---------------------------------");
@@ -45,7 +61,7 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
   // test();
   bot.sendMessage(
     chatId,
-    `Welcome ${msg.from.first_name}! 👋\n*You are now subscribed to the bot* 🚀.\nYou will be notified when a token with a balance of *${ethValue} ETH* or more is detected. 💰`,
+    `Welcome, ${msg.from.first_name}! 👋\n*You have successfully subscribed to the bot* 🚀.\nYou will receive notifications when a token with a balance of *${ethValue} ETH* or more is detected. 💰\n\nUse /help to view available commands.`,
     {
       message_thread_id: msg.message_thread_id,
       parse_mode: "Markdown",
@@ -116,6 +132,16 @@ bot.onText(/\/list/, (msg) => {
   }
 });
 
+bot.onText(/\/help/, (msg) => {
+  const chatId = msg.chat.id;
+  const messageThreadId = msg.message_thread_id;
+
+  bot.sendMessage(chatId, helpMessage, {
+    message_thread_id: messageThreadId,
+    parse_mode: "Markdown",
+  });
+});
+
 async function processBlock(blockNumber) {
   console.log("Processing block:", blockNumber);
   await delay(3000);
@@ -158,7 +184,7 @@ async function processBlock(blockNumber) {
                   )) {
                     bot.sendMessage(
                       chatId,
-                      `*New Gem Detected*✅\n*Name*: ${tokenData.name}\n*Symbol* :${tokenData.symbol}\n*Link*: \`https://etherscan.io/address/${response.contractAddress}\`\n\n*Contract Address*\n\`${response.contractAddress}\`\n*Deployer Address*\n\`${deployerAddress}\`\n\n*Amount Funded*: \`${formatedBalance} ETH\``,
+                      `*New Gem Detected*✅\n\n*Name*: ${tokenData.name}\n*Symbol* :${tokenData.symbol}\n*Link*: \`https://etherscan.io/address/${response.contractAddress}\`\n\n*Contract Address*: \`https://etherscan.io/address/${response.contractAddress}\`\n*Deployer Address*: \`https://etherscan.io/address/${deployerAddress}\`\n\n*Amount Funded*: \`${formatedBalance} ETH\``,
                       {
                         message_thread_id: messageThreadId,
                         parse_mode: "MarkdownV2",
@@ -168,7 +194,7 @@ async function processBlock(blockNumber) {
                 } else {
                   bot.sendMessage(
                     chatId,
-                    `*New Gem Detected*✅\n*Name*: ${tokenData.name}\n*Symbol* :${tokenData.symbol}\n*Link*: \`https://etherscan.io/address/${response.contractAddress}\`\n\n*Contract Address*\n\`${response.contractAddress}\`\n*Deployer Address*\n\`${deployerAddress}\`\n\n*Amount Funded*: \`${formatedBalance} ETH\``,
+                    `*New Gem Detected*✅\n\n*Name*: ${tokenData.name}\n*Symbol* :${tokenData.symbol}\n*Link*: \`https://etherscan.io/address/${response.contractAddress}\`\n\n*Contract Address*: \`https://etherscan.io/address/${response.contractAddress}\`\n*Deployer Address*: \`https://etherscan.io/address/${deployerAddress}\`\n\n*Amount Funded*: \`${formatedBalance} ETH\``,
                     {
                       parse_mode: "MarkdownV2",
                     }
