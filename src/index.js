@@ -1,6 +1,8 @@
 const { Network, Alchemy, Utils } = require("alchemy-sdk");
 const express = require("express");
 const TelegramBot = require("node-telegram-bot-api");
+const { ethers } = require("ethers");
+const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
@@ -14,8 +16,19 @@ const settings = {
 
 const alchemy = new Alchemy(settings);
 const token = process.env.TELEGRAM_TOKEN;
+const provider = new ethers.providers.JsonRpcProvider(
+  process.env.ALCHEMY_RPC_URL
+);
 
 const bot = new TelegramBot(token, { polling: true });
+
+// Set available commands
+bot.setMyCommands([
+  { command: "start", description: "Subscribe to notifications" },
+  { command: "stop", description: "Unsubscribe from notifications" },
+  { command: "list", description: "View your active subscriptions" },
+  { command: "help", description: "Get available commands" },
+]);
 
 const userSubscriptions = new Map();
 const userChatId_messageThreadId = new Map();
@@ -24,11 +37,21 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const helpMessage = `
+*Available commands*:
+/start <value> - Subscribe to notifications for tokens with balance >= <value> ETH
+/stop <value> - Unsubscribe from notifications for <value> ETH
+/list - View your active subscriptions
+/help - Get available commands
+`;
+
 bot.onText(/\/start(.+)?/, async (msg, match) => {
+  console.log("---------------------------------");
+  console.log("msg:", msg);
   const chatId = msg.chat.id;
   console.log("---------------------------------");
   console.log("msg:", msg);
-  const ethValue = match[1] ? Number(match[1].trim()) : 0.9;
+  const ethValue = match[1] ? Number(match[1].trim()) : 0;
 
   if (!userSubscriptions.has(chatId)) {
     userSubscriptions.set(chatId, new Set());
@@ -43,12 +66,13 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
   // test();
   bot.sendMessage(
     chatId,
-    `Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`,
+    `Welcome, ${msg.from.first_name}! 👋\n*You have successfully subscribed to the bot* 🚀.\nYou will receive notifications when a token with a balance of *${ethValue} ETH* or more is detected. 💰\n\nUse /help to view available commands.`,
     {
       message_thread_id: msg.message_thread_id,
+      parse_mode: "Markdown",
     }
   );
-  console.log("msg.message_thread_id:", msg.message_thread_id);
+  // console.log("msg.message_thread_id:", msg.message_thread_id);
   console.log("chatId:", chatId);
 });
 
@@ -113,74 +137,278 @@ bot.onText(/\/list/, (msg) => {
   }
 });
 
+bot.onText(/\/help/, (msg) => {
+  const chatId = msg.chat.id;
+  const messageThreadId = msg.message_thread_id;
+
+  bot.sendMessage(chatId, helpMessage, {
+    message_thread_id: messageThreadId,
+    parse_mode: "Markdown",
+  });
+});
+
+async function getContractSource(contractAddress) {
+  console.log("------------------TRYING TO GET SOURCE CODE---------------");
+  console.log("contractAddress", contractAddress);
+  console.log("---------------------------------");
+  try {
+    const apiKey = process.env.ETHERSCAN_API_KEY;
+    const url = `https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${contractAddress}&apikey=${apiKey}`;
+
+    const response = await axios.get(url);
+
+    if (response.data.status === "1" && response.data.result[0].SourceCode) {
+      return response.data.result[0].SourceCode;
+    } else {
+      console.log("Contract is not verified or source code is not available.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching contract source:", error);
+    return null;
+  }
+}
+
+function extractLinks(sourceCode) {
+  let website = "";
+  let telegram = "";
+  let x = ""; // for Twitter/X
+
+  const websiteMatch = sourceCode.match(
+    /(?:https?:\/\/|www\.)[^\s"']+(?<!t\.me|x\.com|twitter\.com)[^\s"']+(?!t\.me|x\.com|twitter\.com)[^\s"']+/i
+  );
+  if (websiteMatch) {
+    website = websiteMatch[0];
+  }
+  if (
+    websiteMatch[0].includes("t.me") ||
+    websiteMatch[0].includes("x.com") ||
+    websiteMatch[0].includes("twitter.com") ||
+    websiteMatch[0].includes("telegram.com")
+  ) {
+    website = "";
+  }
+
+  const telegramMatch = sourceCode.match(/(https?:\/\/|www\.)?t\.me\/\S+/i);
+  if (telegramMatch) {
+    telegram = telegramMatch[0];
+  }
+
+  const xMatch = sourceCode.match(/(https?:\/\/|www\.)?x\.com\/\S+/i);
+  if (xMatch) {
+    x = xMatch[0];
+  }
+
+  return { website, telegram, x };
+}
+
 async function processBlock(blockNumber) {
   console.log("Processing block:", blockNumber);
   await delay(3000);
 
   console.log("Fetching transactions...");
 
-  // let { transactions } = await alchemy.core.getBlock(blockNumber);
   let { receipts } = await alchemy.core.getTransactionReceipts({
     blockNumber: blockNumber.toString(),
   });
+  // for (let response of receipts) {
+
+  // }
 
   for (let response of receipts) {
-    try {
-      if (response.contractAddress) {
-        console.log("contract address", response.contractAddress);
+    // console.log("response", response);
+    if (response.contractAddress) {
+      let tokenData;
 
-        let tokenData = await alchemy.core.getTokenMetadata(
+      try {
+        tokenData = await alchemy.core.getTokenMetadata(
           response.contractAddress
         );
-        if (tokenData.decimals > 0) {
-          console.log("got erc20 token", tokenData);
-          let balance = await alchemy.core.getBalance(
-            response.contractAddress,
-            "latest"
+      } catch (error) {
+        if (
+          error.code === "SERVER_ERROR" &&
+          error.error &&
+          error.error.code === -32602
+        ) {
+          console.error(
+            `Invalid token contract address: ${response.contractAddress}`
           );
-          let formatedBalance = Utils.formatUnits(balance.toString(), "ether");
-
-          let { deployerAddress } = await alchemy.core.findContractDeployer(
-            response.contractAddress
+          continue; // Skip to the next iteration of the loop
+        } else {
+          console.error(
+            `Error fetching token metadata for ${response.contractAddress}:`,
+            error
           );
+          continue; // Skip to the next iteration of the loop
+        }
+      }
 
-          for (let [chatId, subscriptions] of userSubscriptions.entries()) {
-            for (let ethValue of subscriptions) {
-              if (formatedBalance >= Number(ethValue)) {
-                console.log("sending to chatId", chatId);
-                if (userChatId_messageThreadId.has(chatId)) {
-                  for (let messageThreadId of userChatId_messageThreadId.get(
-                    chatId
-                  )) {
-                    bot.sendMessage(
-                      chatId,
-                      `https://etherscan.io/address/${response.contractAddress} \n - Contract Address: ${response.contractAddress} \n - Deployer Address: ${deployerAddress} \n - Current Balance: ${formatedBalance} ETH \n - Token Name: ${tokenData.name} \n - Token Symbol: ${tokenData.symbol}`,
-                      {
-                        message_thread_id: messageThreadId,
-                      }
-                    );
-                  }
-                } else {
-                  bot.sendMessage(
-                    chatId,
-                    `https://etherscan.io/address/${response.contractAddress} \n - Contract Address: ${response.contractAddress} \n - Deployer Address: ${deployerAddress} \n - Current Balance: ${formatedBalance} ETH \n - Token Name: ${tokenData.name} \n - Token Symbol: ${tokenData.symbol}`
-                  );
+      if (tokenData.decimals > 0) {
+        console.log("tokenData", tokenData);
+        console.log("got erc20 token", tokenData);
+        let balance = await alchemy.core.getBalance(
+          response.contractAddress,
+          "latest"
+        );
+        let formatedBalance = Utils.formatUnits(balance.toString(), "ether");
+        console.log("formatedBalance", formatedBalance);
+        let { deployerAddress } = await alchemy.core.findContractDeployer(
+          response.contractAddress
+        );
+        console.log("deployerAddress", deployerAddress);
+
+        const isVerified = await isContractVerified(response.contractAddress);
+        console.log("isVerified", isVerified);
+
+        // verified contract
+        let website = null;
+        let telegram = null;
+        let x = null;
+        let sourceCode = null;
+
+        if (isVerified) {
+          sourceCode = await getContractSource(response.contractAddress);
+          // console.log("sourceCode", sourceCode);
+          if (sourceCode) {
+            ({ website, telegram, x } = extractLinks(sourceCode));
+          }
+          console.log("website", website);
+          console.log("telegram", telegram);
+          console.log("x", x);
+        }
+
+        // unverified contract
+        const uniswapV2PairAddress = await getUniswapV2PairAddress(
+          response.contractAddress
+        );
+        console.log("uniswapV2PairAddress", uniswapV2PairAddress);
+        const lpBalance = await getLPBalance(uniswapV2PairAddress);
+        console.log("lpBalance", lpBalance);
+
+        const isLPFilled = lpBalance > 0;
+
+        for (let [chatId, subscriptions] of userSubscriptions.entries()) {
+          for (let ethValue of subscriptions) {
+            console.log("---------------CHAT MSG ------------------");
+            console.log("formatedBalance", formatedBalance);
+            console.log("ethValue", ethValue);
+            console.log("isLPFilled", isLPFilled);
+            if (formatedBalance >= Number(ethValue) || isLPFilled) {
+              console.log("sending to chatId", chatId);
+
+              const message = `*New Gem Detected*✅\n\n*Name*: ${
+                tokenData.name
+              }\n*Symbol*: ${
+                tokenData.symbol
+              }\n\n*Link*: https://etherscan.io/address/${
+                response.contractAddress
+              }\n*Contract Address*: https://etherscan.io/address/${
+                response.contractAddress
+              }\n*Deployer Address*: https://etherscan.io/address/${deployerAddress}\n\n*Amount Funded*: ${formatedBalance} ETH\n\n*LP Filled on Uniswap*: ${
+                isLPFilled ? `Yes\n*LP Balance*: ${lpBalance}` : "No\n"
+              }\n\n ${website ? `*Website*: [${website}](${website})\n` : ""}${
+                x ? `*X (Twitter)*: [${x}](${x})\n` : ""
+              }${telegram ? `*Telegram*: [${telegram}](${telegram})` : ""}`;
+
+              if (userChatId_messageThreadId.has(chatId)) {
+                for (let messageThreadId of userChatId_messageThreadId.get(
+                  chatId
+                )) {
+                  bot.sendMessage(chatId, message, {
+                    message_thread_id: messageThreadId,
+                    parse_mode: "Markdown",
+                    disable_web_page_preview: true,
+                  });
                 }
-
-                console.log(
-                  "we got the required address",
-                  response.contractAddress
-                );
+              } else {
+                bot.sendMessage(chatId, message, {
+                  parse_mode: "Markdown",
+                  disable_web_page_preview: true,
+                });
               }
+
+              console.log(
+                "we got the required address",
+                response.contractAddress
+              );
             }
           }
         }
-
-        console.log(tokenData);
+      } else {
+        console.log("not erc20 token", tokenData);
+        continue;
       }
-    } catch (e) {
-      console.log("error in b1", e);
     }
+  }
+}
+
+async function isContractVerified(contractAddress) {
+  try {
+    const apiKey = process.env.ETHERSCAN_API_KEY;
+    const url = `https://api.etherscan.io/api?module=contract&action=getabi&address=${contractAddress}&apikey=${apiKey}`;
+
+    const response = await axios.get(url);
+
+    return (
+      response.data.status === "1" &&
+      response.data.result !== "Contract source code not verified"
+    );
+  } catch (error) {
+    console.error("Error checking contract verification:", error);
+    return false;
+  }
+}
+
+async function getUniswapV2PairAddress(tokenAddress) {
+  const uniswapV2FactoryAddress = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
+  const uniswapV2FactoryABI = [
+    "function getPair(address tokenA, address tokenB) external view returns (address pair)",
+  ];
+
+  const uniswapV2Factory = new ethers.Contract(
+    uniswapV2FactoryAddress,
+    uniswapV2FactoryABI,
+    provider
+  );
+
+  const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH address on mainnet
+
+  try {
+    const pairAddress = await uniswapV2Factory.getPair(
+      tokenAddress,
+      wethAddress
+    );
+    return pairAddress;
+  } catch (error) {
+    console.error("Error getting Uniswap V2 pair address:", error);
+    return null;
+  }
+}
+
+async function getLPBalance(pairAddress) {
+  if (!pairAddress || pairAddress === ethers.constants.AddressZero) {
+    return 0;
+  }
+
+  const uniswapV2PairABI = [
+    "function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
+  ];
+
+  const uniswapV2Pair = new ethers.Contract(
+    pairAddress,
+    uniswapV2PairABI,
+    provider
+  );
+
+  try {
+    const [reserve0, reserve1] = await uniswapV2Pair.getReserves();
+    // We're returning the sum of both reserves as a simple measure of liquidity
+    return ethers.BigNumber.from(reserve0)
+      .add(ethers.BigNumber.from(reserve1))
+      .toString();
+  } catch (error) {
+    console.error("Error getting LP balance:", error);
+    return 0;
   }
 }
 
@@ -194,7 +422,6 @@ async function main() {
   });
 }
 
-main();
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -204,4 +431,5 @@ app.use((err, req, res, next) => {
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  main();
 });
