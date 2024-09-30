@@ -268,7 +268,7 @@ async function processBlock(blockNumber) {
 
         if (isVerified) {
           sourceCode = await getContractSource(response.contractAddress);
-          console.log("sourceCode", sourceCode);
+          // console.log("sourceCode", sourceCode);
           if (sourceCode) {
             ({ website, telegram, x } = extractLinks(sourceCode));
           }
