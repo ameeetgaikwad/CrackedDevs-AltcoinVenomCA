@@ -25,10 +25,12 @@ function delay(ms) {
 }
 
 bot.onText(/\/start(.+)?/, async (msg, match) => {
+  console.log("---------------------------------");
+  console.log("msg:", msg);
   const chatId = msg.chat.id;
   console.log("---------------------------------");
   console.log("msg:", msg);
-  const ethValue = match[1] ? Number(match[1].trim()) : 0.9;
+  const ethValue = match[1] ? Number(match[1].trim()) : 0;
 
   if (!userSubscriptions.has(chatId)) {
     userSubscriptions.set(chatId, new Set());
@@ -43,12 +45,13 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
   // test();
   bot.sendMessage(
     chatId,
-    `Welcome ${msg.from.first_name}! You are now subscribed to the bot. You will be notified when a token with a balance of ${ethValue} ETH or more is detected.`,
+    `Welcome ${msg.from.first_name}! 👋\n*You are now subscribed to the bot* 🚀.\nYou will be notified when a token with a balance of *${ethValue} ETH* or more is detected. 💰`,
     {
       message_thread_id: msg.message_thread_id,
+      parse_mode: "Markdown",
     }
   );
-  console.log("msg.message_thread_id:", msg.message_thread_id);
+  // console.log("msg.message_thread_id:", msg.message_thread_id);
   console.log("chatId:", chatId);
 });
 
@@ -132,6 +135,7 @@ async function processBlock(blockNumber) {
         let tokenData = await alchemy.core.getTokenMetadata(
           response.contractAddress
         );
+        console.log("tokenData", tokenData);
         if (tokenData.decimals > 0) {
           console.log("got erc20 token", tokenData);
           let balance = await alchemy.core.getBalance(
@@ -139,7 +143,7 @@ async function processBlock(blockNumber) {
             "latest"
           );
           let formatedBalance = Utils.formatUnits(balance.toString(), "ether");
-
+          console.log("formatedBalance", formatedBalance);
           let { deployerAddress } = await alchemy.core.findContractDeployer(
             response.contractAddress
           );
@@ -154,16 +158,20 @@ async function processBlock(blockNumber) {
                   )) {
                     bot.sendMessage(
                       chatId,
-                      `https://etherscan.io/address/${response.contractAddress} \n - Contract Address: ${response.contractAddress} \n - Deployer Address: ${deployerAddress} \n - Current Balance: ${formatedBalance} ETH \n - Token Name: ${tokenData.name} \n - Token Symbol: ${tokenData.symbol}`,
+                      `*New Gem Detected*✅\n*Name*: ${tokenData.name}\n*Symbol* :${tokenData.symbol}\n*Link*: \`https://etherscan.io/address/${response.contractAddress}\`\n\n*Contract Address*\n\`${response.contractAddress}\`\n*Deployer Address*\n\`${deployerAddress}\`\n\n*Amount Funded*: \`${formatedBalance} ETH\``,
                       {
                         message_thread_id: messageThreadId,
+                        parse_mode: "MarkdownV2",
                       }
                     );
                   }
                 } else {
                   bot.sendMessage(
                     chatId,
-                    `https://etherscan.io/address/${response.contractAddress} \n - Contract Address: ${response.contractAddress} \n - Deployer Address: ${deployerAddress} \n - Current Balance: ${formatedBalance} ETH \n - Token Name: ${tokenData.name} \n - Token Symbol: ${tokenData.symbol}`
+                    `*New Gem Detected*✅\n*Name*: ${tokenData.name}\n*Symbol* :${tokenData.symbol}\n*Link*: \`https://etherscan.io/address/${response.contractAddress}\`\n\n*Contract Address*\n\`${response.contractAddress}\`\n*Deployer Address*\n\`${deployerAddress}\`\n\n*Amount Funded*: \`${formatedBalance} ETH\``,
+                    {
+                      parse_mode: "MarkdownV2",
+                    }
                   );
                 }
 
