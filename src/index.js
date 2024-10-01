@@ -296,19 +296,21 @@ async function processBlock(blockNumber) {
             if (formatedBalance >= Number(ethValue) || isLPFilled) {
               console.log("sending to chatId", chatId);
 
-              const message = `*New Gem Detected*✅\n\n*Name*: ${
+              const message = `*New Gem Detected* ✅\n\n*Name*: ${
                 tokenData.name
               }\n*Symbol*: ${
                 tokenData.symbol
               }\n\n*Link*: https://etherscan.io/address/${
                 response.contractAddress
-              }\n*Contract Address*: https://etherscan.io/address/${
+              }\n*Contract Address*: [${
                 response.contractAddress
-              }\n*Deployer Address*: https://etherscan.io/address/${deployerAddress}\n\n*Amount Funded*: ${formatedBalance} ETH\n\n*LP Filled on Uniswap*: ${
+              }](https://etherscan.io/address/${
+                response.contractAddress
+              })\n*Deployer Address*: [${deployerAddress}](https://etherscan.io/address/${deployerAddress})\n\n*Amount Funded*: ${formatedBalance} ETH\n\n*LP Filled on Uniswap*: ${
                 isLPFilled ? `Yes\n*LP Balance*: ${lpBalance}` : "No\n"
-              }\n\n ${website ? `*Website*: [${website}](${website})\n` : ""}${
-                x ? `*X (Twitter)*: [${x}](${x})\n` : ""
-              }${telegram ? `*Telegram*: [${telegram}](${telegram})` : ""}`;
+              }\n\n ${website ? `[Website](${website})  ` : ""}${
+                x ? `[Twitter/X](${x})  ` : ""
+              }${telegram ? `[Telegram](${telegram})` : ""}`;
 
               if (userChatId_messageThreadId.has(chatId)) {
                 for (let messageThreadId of userChatId_messageThreadId.get(
