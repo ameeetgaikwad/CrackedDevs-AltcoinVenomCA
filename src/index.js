@@ -308,7 +308,7 @@ async function processBlock(blockNumber) {
             console.log("ethValue", ethValue);
             console.log("isLPFilled", isLPFilled);
             if (
-              formattedDeployerBalance >= Number(ethValue) ||
+              formatedBalance >= Number(ethValue) ||
               formattedLPBalance >= Number(ethValue)
             ) {
               console.log("sending to chatId", chatId);
