@@ -51,7 +51,7 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
   const chatId = msg.chat.id;
   console.log("---------------------------------");
   console.log("msg:", msg);
-  const ethValue = match[1] ? Number(match[1].trim()) : 0;
+  const ethValue = match[1] ? Number(match[1].trim()) : 0.9;
 
   if (!userSubscriptions.has(chatId)) {
     userSubscriptions.set(chatId, new Set());
@@ -287,28 +287,48 @@ async function processBlock(blockNumber) {
 
         const isLPFilled = lpBalance > 0;
 
+        let deployerBalance = await alchemy.core.getBalance(
+          deployerAddress,
+          "latest"
+        );
+        let formattedDeployerBalance = Utils.formatUnits(
+          deployerBalance.toString(),
+          "ether"
+        );
+
+        const formattedLPBalance = Utils.formatUnits(
+          lpBalance.toString(),
+          "ether"
+        );
+
         for (let [chatId, subscriptions] of userSubscriptions.entries()) {
           for (let ethValue of subscriptions) {
             console.log("---------------CHAT MSG ------------------");
             console.log("formatedBalance", formatedBalance);
             console.log("ethValue", ethValue);
             console.log("isLPFilled", isLPFilled);
-            if (formatedBalance >= Number(ethValue) || isLPFilled) {
+            if (
+              formattedDeployerBalance >= Number(ethValue) ||
+              formattedLPBalance >= Number(ethValue)
+            ) {
               console.log("sending to chatId", chatId);
-
-              const message = `*New Gem Detected*✅\n\n*Name*: ${
+              console.log("formattedDeployerBalance", formattedDeployerBalance);
+              console.log("formattedLPBalance", formattedLPBalance);
+              const message = `*New Gem Detected* ✅\n\n*Name*: ${
                 tokenData.name
               }\n*Symbol*: ${
                 tokenData.symbol
               }\n\n*Link*: https://etherscan.io/address/${
                 response.contractAddress
-              }\n*Contract Address*: https://etherscan.io/address/${
+              }\n*Contract Address*: [${
                 response.contractAddress
-              }\n*Deployer Address*: https://etherscan.io/address/${deployerAddress}\n\n*Amount Funded*: ${formatedBalance} ETH\n\n*LP Filled on Uniswap*: ${
-                isLPFilled ? `Yes\n*LP Balance*: ${lpBalance}` : "No\n"
-              }\n\n ${website ? `*Website*: [${website}](${website})\n` : ""}${
-                x ? `*X (Twitter)*: [${x}](${x})\n` : ""
-              }${telegram ? `*Telegram*: [${telegram}](${telegram})` : ""}`;
+              }](https://etherscan.io/address/${
+                response.contractAddress
+              })\n*Deployer Address*: [${deployerAddress}](https://etherscan.io/address/${deployerAddress})\n\n*Amount Funded*: ${formatedBalance} ETH\n\n*Deployer Balance*: \`${formattedDeployerBalance}\` ETH\n*Uniswap LP Balance*: \`${formattedLPBalance}\` ETH\n\n ${
+                website ? `[Website](${website})  ` : ""
+              }${x ? `[X](${x})  ` : ""}${
+                telegram ? `[Telegram](${telegram})` : ""
+              }`;
 
               if (userChatId_messageThreadId.has(chatId)) {
                 for (let messageThreadId of userChatId_messageThreadId.get(
