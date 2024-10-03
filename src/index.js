@@ -184,7 +184,9 @@ function extractLinks(sourceCode) {
     websiteMatch[0].includes("t.me") ||
     websiteMatch[0].includes("x.com") ||
     websiteMatch[0].includes("twitter.com") ||
-    websiteMatch[0].includes("telegram.com")
+    websiteMatch[0].includes("telegram.com") ||
+    websiteMatch[0].includes("openzeppelin") ||
+    websiteMatch[0].includes("eips")
   ) {
     website = "";
   }
@@ -325,8 +327,10 @@ async function processBlock(blockNumber) {
               })\n*Deployer Address*: [${deployerAddress}](https://etherscan.io/address/${deployerAddress})\n\n*Amount Funded*: ${formatedBalance} ETH\n*Deployer Balance*: \`${formattedDeployerBalance}\` ETH\n*Uniswap LP Balance*: \`${formattedLPBalance}\` ETH\n\n ${
                 website ? `[Website](${website})  ` : ""
               }${x ? `[X](${x})  ` : ""}${
-                telegram ? `[Telegram](${telegram})` : ""
-              }`;
+                telegram ? `[Telegram](${telegram})  ` : ""
+              }[Honeypot](https://honeypot.is/ethereum?address=${
+                response.contractAddress
+              })`;
 
               if (userChatId_messageThreadId.has(chatId)) {
                 for (let messageThreadId of userChatId_messageThreadId.get(
