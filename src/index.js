@@ -297,6 +297,7 @@ async function processBlock(blockNumber) {
         );
 
         const formattedLPBalance = ethers.utils.formatEther(lpBalance);
+        console.log("formattedLPBalance", formattedLPBalance);
 
         for (let [chatId, subscriptions] of userSubscriptions.entries()) {
           for (let ethValue of subscriptions) {
@@ -441,7 +442,9 @@ async function main() {
       console.log("error in b2", e);
     }
   });
+
   // testing data for development
+
   // let blocks = [20863796, 20863800, 20863823, 20863826, 20863838, 20863846];
   // for (let block of blocks) {
   //   await processBlock(block);
