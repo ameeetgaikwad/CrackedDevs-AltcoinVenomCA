@@ -51,7 +51,7 @@ bot.onText(/\/start(.+)?/, async (msg, match) => {
   const chatId = msg.chat.id;
   console.log("---------------------------------");
   console.log("msg:", msg);
-  const ethValue = match[1] ? Number(match[1].trim()) : 0.9;
+  const ethValue = match[1] ? Number(match[1].trim()) : 2.2;
 
   if (!userSubscriptions.has(chatId)) {
     userSubscriptions.set(chatId, new Set());
