@@ -285,7 +285,7 @@ async function processBlock(blockNumber) {
         const lpBalance = await getLPBalance(uniswapV2PairAddress);
         console.log("lpBalance", lpBalance);
 
-        const isLPFilled = lpBalance > 0;
+        const isLPFilled = lpBalance.gt(0);
 
         let deployerBalance = await alchemy.core.getBalance(
           deployerAddress,
@@ -296,16 +296,14 @@ async function processBlock(blockNumber) {
           "ether"
         );
 
-        const formattedLPBalance = Utils.formatUnits(
-          lpBalance.toString(),
-          "ether"
-        );
+        const formattedLPBalance = ethers.utils.formatEther(lpBalance);
+        console.log("formattedLPBalance", formattedLPBalance);
 
         for (let [chatId, subscriptions] of userSubscriptions.entries()) {
           for (let ethValue of subscriptions) {
             console.log("---------------CHAT MSG ------------------");
             console.log("formatedBalance", formatedBalance);
-            console.log("ethValue", ethValue);
+            // console.log("ethValue", ethValue);
             console.log("isLPFilled", isLPFilled);
             if (
               formatedBalance >= Number(ethValue) ||
@@ -407,11 +405,12 @@ async function getUniswapV2PairAddress(tokenAddress) {
 
 async function getLPBalance(pairAddress) {
   if (!pairAddress || pairAddress === ethers.constants.AddressZero) {
-    return 0;
+    return ethers.BigNumber.from(0);
   }
 
   const uniswapV2PairABI = [
     "function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
+    "function token0() external view returns (address)",
   ];
 
   const uniswapV2Pair = new ethers.Contract(
@@ -422,13 +421,16 @@ async function getLPBalance(pairAddress) {
 
   try {
     const [reserve0, reserve1] = await uniswapV2Pair.getReserves();
-    // We're returning the sum of both reserves as a simple measure of liquidity
-    return ethers.BigNumber.from(reserve0)
-      .add(ethers.BigNumber.from(reserve1))
-      .toString();
+    const token0 = await uniswapV2Pair.token0();
+
+    const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+    const ethReserve =
+      token0.toLowerCase() === wethAddress.toLowerCase() ? reserve0 : reserve1;
+
+    return ethers.BigNumber.from(ethReserve);
   } catch (error) {
     console.error("Error getting LP balance:", error);
-    return 0;
+    return ethers.BigNumber.from(0);
   }
 }
 
@@ -440,6 +442,13 @@ async function main() {
       console.log("error in b2", e);
     }
   });
+
+  // testing data for development
+
+  // let blocks = [20863796, 20863800, 20863823, 20863826, 20863838, 20863846];
+  // for (let block of blocks) {
+  //   await processBlock(block);
+  // }
 }
 
 // Error handling middleware
