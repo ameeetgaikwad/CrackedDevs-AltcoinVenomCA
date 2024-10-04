@@ -175,30 +175,33 @@ function extractLinks(sourceCode) {
   let x = ""; // for Twitter/X
 
   const websiteMatch = sourceCode.match(
-    /(?:https?:\/\/|www\.)[^\s"']+(?<!t\.me|x\.com|twitter\.com)[^\s"']+(?!t\.me|x\.com|twitter\.com)[^\s"']+/i
+    /([\w+]+\:\/\/)?([\w\d-]+\.)*[\w-]+[\.\:]\w+([\/\?\=\&\#\.]?[\w-]+)*\/?/gm
   );
-  if (websiteMatch) {
-    website = websiteMatch[0];
-  }
-  if (
-    websiteMatch[0].includes("t.me") ||
-    websiteMatch[0].includes("x.com") ||
-    websiteMatch[0].includes("twitter.com") ||
-    websiteMatch[0].includes("telegram.com") ||
-    websiteMatch[0].includes("openzeppelin") ||
-    websiteMatch[0].includes("eips")
-  ) {
-    website = "";
-  }
+  console.log(websiteMatch);
 
-  const telegramMatch = sourceCode.match(/(https?:\/\/|www\.)?t\.me\/\S+/i);
-  if (telegramMatch) {
-    telegram = telegramMatch[0];
-  }
-
-  const xMatch = sourceCode.match(/(https?:\/\/|www\.)?x\.com\/\S+/i);
-  if (xMatch) {
-    x = xMatch[0];
+  for (let link of websiteMatch) {
+    link = link.toLowerCase();
+    if (link.includes("t.me") && !telegram) {
+      telegram = link;
+    } else if (
+      (link.includes("x.com") ||
+        link.includes("twitter.com") ||
+        link.includes("Twitter")) &&
+      !x
+    ) {
+      x = link;
+    } else if (
+      !link.includes("openzeppelin") &&
+      !link.includes("eips") &&
+      !link.includes("Etherscan") &&
+      !link.includes("etherscan") &&
+      !website
+    ) {
+      website = link;
+    }
+    if (website && telegram && x) {
+      break;
+    }
   }
 
   return { website, telegram, x };
