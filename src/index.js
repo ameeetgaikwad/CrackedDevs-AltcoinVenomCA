@@ -327,7 +327,7 @@ async function processBlock(blockNumber) {
                 response.contractAddress
               }](https://etherscan.io/address/${
                 response.contractAddress
-              })\n*Deployer Address*: [${deployerAddress}](https://etherscan.io/address/${deployerAddress})\n\n*Amount Funded*: ${formatedBalance} ETH\n*Deployer Balance*: \`${formattedDeployerBalance}\` ETH\n*Uniswap LP Balance*: \`${formattedLPBalance}\` ETH\n\n ${
+              })\n*Deployer Address*: [${deployerAddress}](https://etherscan.io/address/${deployerAddress})\n\nETH\n*Deployer Balance*: \`${formattedDeployerBalance}\` ETH\n*Uniswap LP Balance*: \`${formattedLPBalance}\` ETH\n\n ${
                 website ? `[Website](${website})  ` : ""
               }${x ? `[X](${x})  ` : ""}${
                 telegram ? `[Telegram](${telegram})  ` : ""
