@@ -204,6 +204,25 @@ function extractLinks(sourceCode) {
     }
   }
 
+  // Check for nhttps and nhttp and replace them with https and http respectively
+  if (website.includes("nhttps")) {
+    website = website.replace("nhttps", "https");
+  } else if (website.includes("nhttp")) {
+    website = website.replace("nhttp", "http");
+  }
+
+  if (telegram.includes("nhttps")) {
+    telegram = telegram.replace("nhttps", "https");
+  } else if (telegram.includes("nhttp")) {
+    telegram = telegram.replace("nhttp", "http");
+  }
+
+  if (x.includes("nhttps")) {
+    x = x.replace("nhttps", "https");
+  } else if (x.includes("nhttp")) {
+    x = x.replace("nhttp", "http");
+  }
+
   return { website, telegram, x };
 }
 
@@ -452,8 +471,8 @@ async function main() {
 
   // testing data for development
 
-  // let blocks = [20863796, 20863800, 20863823, 20863826, 20863838, 20863846];
-  // for (let block of blocks) {
+  // let blocks = [20900100, 20900131];
+  // for (let block = blocks[0]; block <= blocks[1]; block++) {
   //   await processBlock(block);
   // }
 }
