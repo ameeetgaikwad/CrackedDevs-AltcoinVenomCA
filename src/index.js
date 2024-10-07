@@ -169,7 +169,7 @@ async function getContractSource(contractAddress) {
   }
 }
 
-function extractLinks(sourceCode) {
+async function extractLinks(sourceCode) {
   let website = "";
   let telegram = "";
   let x = ""; // for Twitter/X
@@ -280,7 +280,7 @@ async function processBlock(blockNumber) {
           response.contractAddress
         );
         console.log("deployerAddress", deployerAddress);
-
+        await delay(20000);
         const isVerified = await isContractVerified(response.contractAddress);
         console.log("isVerified", isVerified);
 
@@ -294,7 +294,10 @@ async function processBlock(blockNumber) {
           sourceCode = await getContractSource(response.contractAddress);
           // console.log("sourceCode", sourceCode);
           if (sourceCode) {
-            ({ website, telegram, x } = extractLinks(sourceCode));
+            const links = await extractLinks(sourceCode);
+            website = links.website;
+            telegram = links.telegram;
+            x = links.x;
           }
           console.log("website", website);
           console.log("telegram", telegram);
@@ -471,10 +474,7 @@ async function main() {
 
   // testing data for development
 
-  // let blocks = [20900100, 20900131];
-  // for (let block = blocks[0]; block <= blocks[1]; block++) {
-  //   await processBlock(block);
-  // }
+  // await processBlock(20901016);
 }
 
 // Error handling middleware
