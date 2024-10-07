@@ -280,7 +280,9 @@ async function processBlock(blockNumber) {
           response.contractAddress
         );
         console.log("deployerAddress", deployerAddress);
-        await delay(20000);
+        console.log("-------------BLOCKING EXECUTION-------------");
+        await delay(420000);
+        console.log("-------------UNBLOCKING EXECUTION-------------");
         const isVerified = await isContractVerified(response.contractAddress);
         console.log("isVerified", isVerified);
 
