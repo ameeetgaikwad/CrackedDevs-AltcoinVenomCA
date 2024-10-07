@@ -195,7 +195,8 @@ async function extractLinks(sourceCode) {
       !link.includes("eips") &&
       !link.includes("Etherscan") &&
       !link.includes("etherscan") &&
-      !website
+      !website &&
+      !/^\d+$/.test(link)
     ) {
       website = link;
     }
@@ -281,7 +282,7 @@ async function processBlock(blockNumber) {
         );
         console.log("deployerAddress", deployerAddress);
         console.log("-------------BLOCKING EXECUTION-------------");
-        await delay(420000);
+        await delay(300000);
         console.log("-------------UNBLOCKING EXECUTION-------------");
         const isVerified = await isContractVerified(response.contractAddress);
         console.log("isVerified", isVerified);
