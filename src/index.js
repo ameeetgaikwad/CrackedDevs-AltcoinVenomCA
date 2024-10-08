@@ -346,7 +346,7 @@ async function processBlock(blockNumber) {
                 tokenData.name
               }\n*Symbol*: ${
                 tokenData.symbol
-              }\n\n*Link*: https://etherscan.io/address/${
+              }\n\n*Link*: https://dexscreener.com/ethereum/${
                 response.contractAddress
               }\n*Contract Address*: [${
                 response.contractAddress
