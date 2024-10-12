@@ -281,6 +281,25 @@ async function processBlock(blockNumber) {
           response.contractAddress
         );
         console.log("deployerAddress", deployerAddress);
+
+        // Check if the token is low risk using Honeypot API
+        try {
+          const honeypotResponse = await axios.get(
+            `https://api.honeypot.is/v2/IsHoneypot?address=${response.contractAddress}&forceSimulateLiquidity=true&chainID=1`
+          );
+          const riskLevel = honeypotResponse.data.summary.risk;
+
+          if (riskLevel !== "low") {
+            console.log(
+              `Skipping high risk token: ${response.contractAddress}`
+            );
+            continue; // Skip to the next iteration if the token is not low risk
+          }
+        } catch (error) {
+          console.error("Error checking Honeypot API:", error.response.data);
+          continue; // Skip to the next iteration if there's an error
+        }
+
         console.log("-------------BLOCKING EXECUTION-------------");
         await delay(300000);
         console.log("-------------UNBLOCKING EXECUTION-------------");
