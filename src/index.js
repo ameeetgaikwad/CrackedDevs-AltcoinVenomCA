@@ -282,6 +282,9 @@ async function processBlock(blockNumber) {
         );
         console.log("deployerAddress", deployerAddress);
 
+        console.log("-------------BLOCKING EXECUTION-------------");
+        await delay(300000);
+        console.log("-------------UNBLOCKING EXECUTION-------------");
         // Check if the token is low risk using Honeypot API
         try {
           const honeypotResponse = await axios.get(
@@ -299,10 +302,6 @@ async function processBlock(blockNumber) {
           console.error("Error checking Honeypot API:", error.response.data);
           continue; // Skip to the next iteration if there's an error
         }
-
-        console.log("-------------BLOCKING EXECUTION-------------");
-        await delay(300000);
-        console.log("-------------UNBLOCKING EXECUTION-------------");
         const isVerified = await isContractVerified(response.contractAddress);
         console.log("isVerified", isVerified);
 
