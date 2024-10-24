@@ -283,25 +283,25 @@ async function processBlock(blockNumber) {
         console.log("deployerAddress", deployerAddress);
 
         console.log("-------------BLOCKING EXECUTION-------------");
-        await delay(300000);
+        await delay(60000);
         console.log("-------------UNBLOCKING EXECUTION-------------");
         // Check if the token is low risk using Honeypot API
-        try {
-          const honeypotResponse = await axios.get(
-            `https://api.honeypot.is/v2/IsHoneypot?address=${response.contractAddress}&forceSimulateLiquidity=true&chainID=1`
-          );
-          const riskLevel = honeypotResponse.data.summary.risk;
+        // try {
+        //   const honeypotResponse = await axios.get(
+        //     `https://api.honeypot.is/v2/IsHoneypot?address=${response.contractAddress}&forceSimulateLiquidity=true&chainID=1`
+        //   );
+        //   const riskLevel = honeypotResponse.data.summary.risk;
 
-          if (riskLevel !== "low") {
-            console.log(
-              `Skipping high risk token: ${response.contractAddress}`
-            );
-            continue; // Skip to the next iteration if the token is not low risk
-          }
-        } catch (error) {
-          console.error("Error checking Honeypot API:", error.response.data);
-          continue; // Skip to the next iteration if there's an error
-        }
+        //   if (riskLevel !== "low") {
+        //     console.log(
+        //       `Skipping high risk token: ${response.contractAddress}`
+        //     );
+        //     continue; // Skip to the next iteration if the token is not low risk
+        //   }
+        // } catch (error) {
+        //   console.error("Error checking Honeypot API:", error.response.data);
+        //   continue; // Skip to the next iteration if there's an error
+        // }
         const isVerified = await isContractVerified(response.contractAddress);
         console.log("isVerified", isVerified);
 
